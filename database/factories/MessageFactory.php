@@ -2,48 +2,34 @@
 
 namespace Database\Factories;
 
+use App\Models\Message;
+use App\Models\User;
+use App\Models\Group;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Message>
- */
 class MessageFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    protected $model = Message::class;
+
     public function definition(): array
     {
-
-        $senderId = $this->faker->randomElement([0,1]);
-        if($senderId == 0){
-            $senderId = $this->faker->randomElement([\App\Models\User::pluck('id')->toArray()]);
-            $receiverId = 1;
-        }
-        else{
-            $receiverId = $this->faker->randomElement([\App\Models\User::pluck('id')->toArray()]);
-        }
-
+        $senderId = User::inRandomOrder()->first()->id;
+        $receiverId = User::where('id', '!=', $senderId)->inRandomOrder()->first()->id;
         $groupId = null;
-        if($this->faker->boolean(50)){
-            $groupId = $this->faker->randomElement([\App\Models\Group::where('sender_id','!=',1)->pluck('id')->toArray()]);
 
-            $group = \App\Models\Group::find($groupId);
-            $senderId = $this->faker->randomElement($group->users->pluck('id')->toArray());
-
+        // 50% chance of associating this message with a group
+        if (fake()->boolean(50)) {
+            $groupId = Group::inRandomOrder()->first()->id ?? null;
+            $senderId = User::inRandomOrder()->first()->id;
             $receiverId = null;
         }
-        else{
-            $receiverId = $this->faker->randomElement([\App\Models\User::pluck('id')->toArray()]);
-        }
+
         return [
             'sender_id' => $senderId,
             'receiver_id' => $receiverId,
             'group_id' => $groupId,
-            'message' => $this->faker->realText(200),
-            'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
+            'message' => fake()->realText(200),
+            'created_at' => fake()->dateTimeBetween('-1 year', 'now', 'UTC'),
         ];
     }
 }
